@@ -37,3 +37,11 @@ export function lastNDays(days: number): string[] {
   }
   return dates;
 }
+
+/** Días entre dos "YYYY-MM-DD" (ambos extremos inclusive), mínimo 1. */
+export function daysBetweenInclusive(from: string, to: string): number {
+  const a = new Date(`${from}T00:00:00Z`).getTime();
+  const b = new Date(`${to}T00:00:00Z`).getTime();
+  const days = Math.round((b - a) / 86_400_000) + 1;
+  return Math.max(1, days);
+}
