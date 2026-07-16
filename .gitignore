@@ -26,6 +26,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel
@@ -34,3 +35,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase cli (if used locally)
+.supabase
+supabase/.temp
+
+# claude code local settings (machine-specific, not shared)
+.claude/settings.local.json
+
+# os / editor
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

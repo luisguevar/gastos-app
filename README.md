@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gastos — control de gastos personales
 
-## Getting Started
+Next.js 14 (App Router, TypeScript) + Supabase (Postgres + Auth) + Recharts.
+Estética de boleta/recibo: fondo papel, cifras en monoespaciada, categorías
+en líneas punteadas.
 
-First, run the development server:
+## 1. Configurar Supabase
+
+1. En tu proyecto de Supabase, abre **SQL Editor** y ejecuta el contenido de
+   [`supabase/schema.sql`](./supabase/schema.sql). Esto crea la tabla
+   `expenses` con Row Level Security (cada usuario solo ve sus propios gastos).
+2. Esta app es **solo login** (sin registro público). Crea el/los usuarios
+   manualmente en **Authentication → Users → Add user** con email + contraseña.
+3. Copia la URL del proyecto y la `anon` key desde **Project Settings → API**.
+
+## 2. Variables de entorno
+
+Copia `.env.local.example` a `.env.local` y completa con tus credenciales:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 3. Desarrollo local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Abre [http://localhost:3000](http://localhost:3000) — redirige a `/login` si
+no hay sesión activa.
 
-To learn more about Next.js, take a look at the following resources:
+## 4. Deploy en Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Importa el repositorio en Vercel.
+2. En **Settings → Environment Variables**, agrega `NEXT_PUBLIC_SUPABASE_URL`
+   y `NEXT_PUBLIC_SUPABASE_ANON_KEY` (mismos valores que `.env.local`).
+3. Deploy. No se requiere configuración adicional (sin servidor propio, sin
+   variables secretas del lado del servidor).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `supabase/schema.sql` — tabla `expenses`, políticas RLS.
+- `src/lib/supabase/` — clientes de Supabase (browser, server, middleware).
+- `middleware.ts` — protege todas las rutas excepto `/login`.
+- `src/app/login/` — login (email/contraseña), sin registro.
+- `src/app/page.tsx` — dashboard: totales, gráfico de torta, tendencia 30
+  días, lista de gastos recientes.
+- `src/app/actions.ts` — Server Actions: agregar/borrar gasto, cerrar sesión.
+- `src/lib/categories.ts` — categorías predefinidas y su color fijo.
+- `src/lib/date.ts` — fechas en zona horaria `America/Lima`.

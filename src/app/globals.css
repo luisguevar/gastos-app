@@ -2,26 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bóveda — fintech oscuro, sobrio. Tema único (no alterna con el SO). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  color-scheme: dark;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg: #14181c;
+  --card: #1d2126;
+  --border: #3a3f46;
+  --text: #f2efe6;
+  --text-muted: #a8acb2;
+
+  --gold: #c9a227;
+  --gold-hover: #dbb43a;
+  --gold-ink: #14181c;
+
+  --danger: #e5484d;
+  --danger-ink: #ff8589;
+
+  /* Paleta categórica: grises azulados fríos y discretos, orden fijo por
+     categoría (nunca se reordena). El dorado se reserva aparte para
+     resaltar la categoría de mayor gasto del mes (ver CategoryPieChart). */
+  --cat-1: #48525c;
+  --cat-2: #57626d;
+  --cat-3: #67737e;
+  --cat-4: #78838d;
+  --cat-5: #8a949d;
+  --cat-6: #9ca6ae;
+  --cat-7: #afb8bf;
+  --cat-8: #c2cad0;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .font-display {
+    font-family: var(--font-display), var(--font-sans), ui-sans-serif, sans-serif;
+  }
+
+  /* Tarjeta plana: sin sombra, borde sutil, esquinas moderadas. */
+  .vault-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  /* Línea de ítem con separador punteado y monto alineado a la derecha. */
+  .vault-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .vault-line > .vault-dots {
+    flex: 1;
+    border-bottom: 1px dashed var(--border);
+    height: 0;
+    margin-bottom: 0.35em;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }

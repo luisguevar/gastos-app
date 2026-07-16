@@ -1,101 +1,142 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/actions";
+import { AddExpenseForm } from "@/components/add-expense-form";
+import { StatTile } from "@/components/stat-tile";
+import { ExpenseList, type ExpenseRow } from "@/components/expense-list";
+import { CategoryPieChart, type CategoryTotal } from "@/components/charts/category-pie-chart";
+import { TrendChart, type TrendPoint } from "@/components/charts/trend-chart";
+import type { Category } from "@/lib/categories";
+import {
+  daysAgoInLima,
+  dayOfMonthInLima,
+  lastNDays,
+  startOfMonthInLima,
+  todayInLima,
+} from "@/lib/date";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const today = todayInLima();
+  const monthStart = startOfMonthInLima();
+  const trendStart = daysAgoInLima(29);
+
+  const [monthRes, trendRes, recentRes] = await Promise.all([
+    supabase
+      .from("expenses")
+      .select("amount, category, expense_date")
+      .gte("expense_date", monthStart)
+      .lte("expense_date", today),
+    supabase
+      .from("expenses")
+      .select("amount, expense_date")
+      .gte("expense_date", trendStart)
+      .lte("expense_date", today),
+    supabase
+      .from("expenses")
+      .select("id, amount, category, description, expense_date")
+      .order("expense_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  const monthExpenses = monthRes.data ?? [];
+  const trendExpenses = trendRes.data ?? [];
+  const recentExpenses = (recentRes.data ?? []) as ExpenseRow[];
+
+  const todayTotal = monthExpenses
+    .filter((e) => e.expense_date === today)
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+
+  const monthTotal = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const avgDaily = monthTotal / dayOfMonthInLima();
+
+  const categoryMap = new Map<Category, number>();
+  for (const e of monthExpenses) {
+    const category = e.category as Category;
+    categoryMap.set(category, (categoryMap.get(category) ?? 0) + Number(e.amount));
+  }
+  const categoryTotals: CategoryTotal[] = Array.from(categoryMap.entries()).map(
+    ([category, total]) => ({ category, total })
+  );
+
+  const trendMap = new Map<string, number>();
+  for (const e of trendExpenses) {
+    trendMap.set(e.expense_date, (trendMap.get(e.expense_date) ?? 0) + Number(e.amount));
+  }
+  const trendData: TrendPoint[] = lastNDays(30).map((date) => ({
+    date,
+    total: trendMap.get(date) ?? 0,
+  }));
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-ink-muted">
+            Bóveda
+          </p>
+          <h1 className="font-display text-xl font-semibold text-ink">
+            {user.email}
+          </h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="rounded-[8px] border border-line px-3 py-1.5 text-xs uppercase tracking-[0.1em] text-ink-muted transition-colors hover:border-gold hover:text-ink"
+          >
+            Salir
+          </button>
+        </form>
+      </header>
+
+      <section className="grid grid-cols-3 gap-3">
+        <StatTile label="Hoy" amount={todayTotal} />
+        <StatTile label="Este mes" amount={monthTotal} highlight />
+        <StatTile
+          label="Promedio diario"
+          amount={avgDaily}
+          hint={`${dayOfMonthInLima()} días transcurridos`}
+        />
+      </section>
+
+      <section className="vault-card px-6 py-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">
+          Nuevo gasto
+        </h2>
+        <AddExpenseForm />
+      </section>
+
+      <section className="vault-card px-6 py-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">
+          Por categoría · este mes
+        </h2>
+        <CategoryPieChart data={categoryTotals} />
+      </section>
+
+      <section className="vault-card px-6 py-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">
+          Tendencia · últimos 30 días
+        </h2>
+        <TrendChart data={trendData} />
+      </section>
+
+      <section className="vault-card px-6 py-6">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">
+          Gastos recientes
+        </h2>
+        <ExpenseList expenses={recentExpenses} />
+      </section>
+    </main>
   );
 }
