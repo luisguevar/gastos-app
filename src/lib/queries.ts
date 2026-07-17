@@ -88,8 +88,20 @@ export type ExpenseFilters = {
   categoryId?: string;
   paymentTypeId?: string;
   tagId?: string;
+  search?: string;
   limit?: number;
 };
+
+async function resolveTagExpenseIds(
+  supabase: SupabaseClient,
+  tagId: string
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("expense_tags")
+    .select("expense_id")
+    .eq("tag_id", tagId);
+  return (data ?? []).map((r) => r.expense_id as string);
+}
 
 export async function getExpenses(
   supabase: SupabaseClient,
@@ -97,11 +109,7 @@ export async function getExpenses(
 ): Promise<ExpenseRow[]> {
   let expenseIdFilter: string[] | null = null;
   if (filters.tagId) {
-    const { data } = await supabase
-      .from("expense_tags")
-      .select("expense_id")
-      .eq("tag_id", filters.tagId);
-    expenseIdFilter = (data ?? []).map((r) => r.expense_id as string);
+    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
     if (expenseIdFilter.length === 0) return [];
   }
 
@@ -115,9 +123,40 @@ export async function getExpenses(
   if (filters.dateTo) query = query.lte("expense_date", filters.dateTo);
   if (filters.categoryId) query = query.eq("category_id", filters.categoryId);
   if (filters.paymentTypeId) query = query.eq("payment_type_id", filters.paymentTypeId);
+  if (filters.search) query = query.ilike("description", `%${filters.search}%`);
   if (expenseIdFilter) query = query.in("id", expenseIdFilter);
   if (filters.limit) query = query.limit(filters.limit);
 
   const { data } = await query;
   return ((data ?? []) as unknown as RawExpenseRow[]).map(mapExpenseRow);
+}
+
+export async function getExpensesPage(
+  supabase: SupabaseClient,
+  filters: ExpenseFilters & { limit: number; offset: number }
+): Promise<{ expenses: ExpenseRow[]; total: number }> {
+  let expenseIdFilter: string[] | null = null;
+  if (filters.tagId) {
+    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
+    if (expenseIdFilter.length === 0) return { expenses: [], total: 0 };
+  }
+
+  let query = supabase
+    .from("expenses")
+    .select(EXPENSE_SELECT, { count: "exact" })
+    .order("expense_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (filters.dateFrom) query = query.gte("expense_date", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("expense_date", filters.dateTo);
+  if (filters.categoryId) query = query.eq("category_id", filters.categoryId);
+  if (filters.paymentTypeId) query = query.eq("payment_type_id", filters.paymentTypeId);
+  if (filters.search) query = query.ilike("description", `%${filters.search}%`);
+  if (expenseIdFilter) query = query.in("id", expenseIdFilter);
+
+  query = query.range(filters.offset, filters.offset + filters.limit - 1);
+
+  const { data, count } = await query;
+  const expenses = ((data ?? []) as unknown as RawExpenseRow[]).map(mapExpenseRow);
+  return { expenses, total: count ?? expenses.length };
 }

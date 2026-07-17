@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { todayInLima } from "@/lib/date";
 
 export type ExpenseFormState = {
   error?: string;
@@ -19,7 +20,7 @@ function parseExpenseForm(formData: FormData) {
   const tagIds = formData.getAll("tag_ids").map(String).filter(Boolean);
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    return { error: "Ingresa un monto válido mayor a 0." } as const;
+    return { error: "El monto debe ser mayor a cero." } as const;
   }
   if (!categoryId) {
     return { error: "Selecciona una categoría." } as const;
@@ -29,6 +30,9 @@ function parseExpenseForm(formData: FormData) {
   }
   if (!expenseDate) {
     return { error: "Selecciona una fecha." } as const;
+  }
+  if (expenseDate > todayInLima()) {
+    return { error: "La fecha no puede ser una fecha futura." } as const;
   }
 
   return {

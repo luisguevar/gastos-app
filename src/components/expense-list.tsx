@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { deleteExpense } from "@/app/actions/expenses";
 import { ExpenseForm } from "@/components/expense-form";
 import { Modal } from "@/components/modal";
+import { DeleteExpenseModal } from "@/components/delete-expense-modal";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Category, ExpenseRow, PaymentAccount, PaymentType, Tag } from "@/lib/types";
 
@@ -23,7 +23,9 @@ export function ExpenseList({
   categoryColorMap: Map<string, string>;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const editingExpense = expenses.find((e) => e.id === editingId) ?? null;
+  const deletingExpense = expenses.find((e) => e.id === deletingId) ?? null;
 
   if (expenses.length === 0) {
     return (
@@ -75,15 +77,14 @@ export function ExpenseList({
             <span className="font-display tabular shrink-0 text-sm font-medium text-ink">
               {formatCurrency(expense.amount)}
             </span>
-            <form action={deleteExpense.bind(null, expense.id)}>
-              <button
-                type="submit"
-                aria-label={`Borrar gasto de ${formatCurrency(expense.amount)}`}
-                className="shrink-0 px-1.5 text-ink-muted opacity-60 transition-opacity hover:text-danger-ink hover:opacity-100"
-              >
-                ×
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={() => setDeletingId(expense.id)}
+              aria-label={`Borrar gasto de ${formatCurrency(expense.amount)}`}
+              className="shrink-0 px-1.5 text-ink-muted opacity-60 transition-opacity hover:text-danger-ink hover:opacity-100"
+            >
+              ×
+            </button>
           </li>
         ))}
       </ul>
@@ -114,6 +115,8 @@ export function ExpenseList({
           />
         ) : null}
       </Modal>
+
+      <DeleteExpenseModal expense={deletingExpense} onClose={() => setDeletingId(null)} />
     </>
   );
 }

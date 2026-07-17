@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { addExpense, updateExpense, type ExpenseFormState } from "@/app/actions/expenses";
 import { TagMultiSelect } from "@/components/tag-multiselect";
@@ -13,12 +13,25 @@ const initialState: ExpenseFormState = {};
 const fieldClass =
   "rounded-[8px] border border-line bg-card px-3 py-2.5 text-base text-ink outline-none transition-colors focus:border-gold";
 
-function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+function isAmountInvalid(value: string): boolean {
+  const num = Number(value.replace(",", "."));
+  return value.trim() === "" || !Number.isFinite(num) || num <= 0;
+}
+
+function SubmitButton({
+  label,
+  pendingLabel,
+  disabled,
+}: {
+  label: string;
+  pendingLabel: string;
+  disabled: boolean;
+}) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       className="w-full rounded-[10px] bg-gold py-2.5 text-sm font-semibold uppercase tracking-[0.15em] text-gold-ink transition-colors hover:bg-gold-hover disabled:opacity-50"
     >
       {pending ? pendingLabel : label}
@@ -61,6 +74,16 @@ export function ExpenseForm({
   const formRef = useRef<HTMLFormElement>(null);
   const submittedRef = useRef(false);
 
+  const [amount, setAmount] = useState(
+    defaults?.amount !== undefined ? String(defaults.amount) : ""
+  );
+  const [amountTouched, setAmountTouched] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
+
+  const amountInvalid = isAmountInvalid(amount);
+  const amountErrorMessage =
+    amountTouched && amountInvalid ? "El monto debe ser mayor a cero." : null;
+
   useEffect(() => {
     if (submittedRef.current && !state.error) {
       submittedRef.current = false;
@@ -75,9 +98,26 @@ export function ExpenseForm({
     <form
       ref={formRef}
       action={(formData) => {
+        setAmountTouched(true);
+        if (isAmountInvalid(amount)) {
+          setClientError("El monto debe ser mayor a cero.");
+          return;
+        }
+
+        const expenseDate = String(formData.get("expense_date") ?? "");
+        if (expenseDate > todayInLima()) {
+          setClientError("La fecha no puede ser una fecha futura.");
+          return;
+        }
+
+        setClientError(null);
         submittedRef.current = true;
         formAction(formData);
-        if (mode === "create") formRef.current?.reset();
+        if (mode === "create") {
+          formRef.current?.reset();
+          setAmount("");
+          setAmountTouched(false);
+        }
       }}
       className="flex flex-col gap-4"
     >
@@ -93,10 +133,17 @@ export function ExpenseForm({
             step="0.01"
             min="0.01"
             required
-            defaultValue={defaults?.amount}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onBlur={() => setAmountTouched(true)}
             placeholder="0.00"
             className={`${fieldClass} tabular`}
           />
+          {amountErrorMessage ? (
+            <span className="text-xs text-danger-ink" role="alert">
+              {amountErrorMessage}
+            </span>
+          ) : null}
         </label>
 
         <label className="flex flex-col gap-1.5">
@@ -158,15 +205,16 @@ export function ExpenseForm({
 
       <TagMultiSelect allTags={tags} defaultSelectedIds={defaultTagIds} />
 
-      {state.error ? (
+      {clientError ?? state.error ? (
         <p className="text-sm text-danger-ink" role="alert">
-          {state.error}
+          {clientError ?? state.error}
         </p>
       ) : null}
 
       <SubmitButton
         label={mode === "edit" ? "Guardar cambios" : "Agregar gasto"}
         pendingLabel={mode === "edit" ? "Guardando…" : "Guardando…"}
+        disabled={amountInvalid}
       />
     </form>
   );

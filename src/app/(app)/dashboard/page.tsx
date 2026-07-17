@@ -157,12 +157,7 @@ export default async function DashboardPage({
         <PaymentTypeChart data={Array.from(paymentTypeMap.values())} />
       </section>
 
-      <section className="vault-card px-6 py-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">
-          Efectivo vs. digital
-        </h2>
-        <CashDigitalMeter cash={cash} digital={digital} />
-      </section>
+      <CashDigitalMeter cash={cash} digital={digital} />
 
       <section className="vault-card px-6 py-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.15em] text-ink-muted">

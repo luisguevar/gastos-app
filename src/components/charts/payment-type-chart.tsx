@@ -1,6 +1,3 @@
-"use client";
-
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatCurrency } from "@/lib/format";
 
 export type PaymentTypeTotal = {
@@ -8,23 +5,6 @@ export type PaymentTypeTotal = {
   name: string;
   total: number;
 };
-
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: { payload: PaymentTypeTotal }[];
-}) {
-  if (!active || !payload?.length) return null;
-  const { name, total } = payload[0].payload;
-  return (
-    <div className="vault-card px-3 py-2 text-xs">
-      <p className="font-semibold text-ink">{name}</p>
-      <p className="tabular text-ink-muted">{formatCurrency(total)}</p>
-    </div>
-  );
-}
 
 export function PaymentTypeChart({ data }: { data: PaymentTypeTotal[] }) {
   if (data.length === 0) {
@@ -36,40 +16,35 @@ export function PaymentTypeChart({ data }: { data: PaymentTypeTotal[] }) {
   }
 
   const sorted = [...data].sort((a, b) => b.total - a.total);
-  const height = Math.max(sorted.length * 40, 80);
+  const max = Math.max(...sorted.map((d) => d.total));
 
   return (
-    <div style={{ height }} className="w-full">
-      <ResponsiveContainer width="100%" height={height}>
-        <BarChart
-          data={sorted}
-          layout="vertical"
-          margin={{ top: 4, right: 48, left: 0, bottom: 4 }}
-          barCategoryGap={12}
-        >
-          <XAxis type="number" hide />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={110}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: 12, fill: "var(--text-muted)" }}
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--border)", opacity: 0.2 }} />
-          <Bar dataKey="total" fill="var(--cat-4)" radius={[0, 4, 4, 0]} maxBarSize={20}>
-            <LabelList
-              dataKey="total"
-              position="right"
-              formatter={(value) => formatCurrency(Number(value ?? 0))}
-              style={{ fill: "var(--text)", fontSize: 11 }}
-            />
-            {sorted.map((entry) => (
-              <Cell key={entry.id} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="flex flex-col" style={{ gap: 14 }}>
+      {sorted.map((item) => {
+        const pct = max > 0 ? (item.total / max) * 100 : 0;
+        return (
+          <div key={item.id}>
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-ink-muted">{item.name}</span>
+              <span
+                className="text-[13px] font-medium text-ink"
+                style={{ whiteSpace: "nowrap" }}
+              >
+                {formatCurrency(item.total)}
+              </span>
+            </div>
+            <div
+              className="mt-[6px] w-full overflow-hidden rounded-full bg-bg"
+              style={{ height: 8 }}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${pct}%`, backgroundColor: "#8A8FA0" }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

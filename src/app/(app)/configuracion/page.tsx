@@ -4,6 +4,9 @@ import {
   createCategory,
   createPaymentType,
   createTag,
+  renameCategory,
+  renamePaymentType,
+  renameTag,
   setCategoryActive,
   setPaymentTypeActive,
   setTagActive,
@@ -42,6 +45,7 @@ export default async function ConfiguracionPage() {
                   items={categories}
                   createAction={createCategory}
                   toggleAction={setCategoryActive}
+                  renameAction={renameCategory}
                   placeholder="Nueva categoría…"
                 />
               ),
@@ -54,6 +58,7 @@ export default async function ConfiguracionPage() {
                   items={tags}
                   createAction={createTag}
                   toggleAction={setTagActive}
+                  renameAction={renameTag}
                   placeholder="Nueva etiqueta…"
                 />
               ),
@@ -71,6 +76,7 @@ export default async function ConfiguracionPage() {
                       items={paymentTypes}
                       createAction={createPaymentType}
                       toggleAction={setPaymentTypeActive}
+                      renameAction={renamePaymentType}
                       placeholder="Nuevo tipo de pago…"
                     />
                   </div>

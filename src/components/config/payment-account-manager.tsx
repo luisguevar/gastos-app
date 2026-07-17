@@ -2,7 +2,13 @@
 
 import { useTransition } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { createPaymentAccount, setPaymentAccountActive, type CatalogActionState } from "@/app/actions/catalogs";
+import {
+  createPaymentAccount,
+  renamePaymentAccount,
+  setPaymentAccountActive,
+  type CatalogActionState,
+} from "@/app/actions/catalogs";
+import { CatalogNameEditor } from "@/components/config/catalog-name-editor";
 import type { PaymentAccount, PaymentType } from "@/lib/types";
 
 function SubmitButton() {
@@ -73,10 +79,13 @@ export function PaymentAccountManager({
               key={item.id}
               className="flex items-center justify-between gap-3 border-b border-dashed border-line py-2.5 last:border-b-0"
             >
-              <span className="flex min-w-0 flex-col">
-                <span className={`text-sm ${item.activa ? "text-ink" : "text-ink-muted line-through"}`}>
-                  {item.name}
-                </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <CatalogNameEditor
+                  id={item.id}
+                  name={item.name}
+                  activa={item.activa}
+                  renameAction={renamePaymentAccount}
+                />
                 <span className="text-[11px] text-ink-muted">{typeName(item.payment_type_id)}</span>
               </span>
               <button

@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+import { CatalogNameEditor } from "@/components/config/catalog-name-editor";
 import type { Catalog } from "@/lib/types";
 import type { CatalogActionState } from "@/app/actions/catalogs";
 
@@ -22,6 +23,7 @@ export function CatalogManager({
   items,
   createAction,
   toggleAction,
+  renameAction,
   placeholder,
 }: {
   items: Catalog[];
@@ -30,6 +32,7 @@ export function CatalogManager({
     formData: FormData
   ) => Promise<CatalogActionState>;
   toggleAction: (id: string, activa: boolean) => Promise<void>;
+  renameAction: (id: string, name: string) => Promise<CatalogActionState>;
   placeholder: string;
 }) {
   const [state, formAction] = useFormState(createAction, {});
@@ -64,9 +67,12 @@ export function CatalogManager({
               key={item.id}
               className="flex items-center justify-between gap-3 border-b border-dashed border-line py-2.5 last:border-b-0"
             >
-              <span className={`text-sm ${item.activa ? "text-ink" : "text-ink-muted line-through"}`}>
-                {item.name}
-              </span>
+              <CatalogNameEditor
+                id={item.id}
+                name={item.name}
+                activa={item.activa}
+                renameAction={renameAction}
+              />
               <button
                 type="button"
                 disabled={isPending}

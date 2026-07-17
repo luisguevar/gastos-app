@@ -51,11 +51,40 @@ async function setCatalogActive(table: CatalogTable, id: string, activa: boolean
   revalidatePath("/dashboard");
 }
 
+async function renameCatalogItem(
+  table: CatalogTable,
+  id: string,
+  name: string
+): Promise<CatalogActionState> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { error: "El nombre no puede estar vacío." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from(table).update({ name: trimmed }).eq("id", id);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Ya existe un elemento con ese nombre." };
+    }
+    return { error: "No se pudo renombrar. Intenta de nuevo." };
+  }
+
+  revalidatePath("/configuracion");
+  revalidatePath("/gastos");
+  revalidatePath("/dashboard");
+  return {};
+}
+
 export async function createCategory(_prev: CatalogActionState, formData: FormData) {
   return createCatalogItem("categories", String(formData.get("name") ?? ""));
 }
 export async function setCategoryActive(id: string, activa: boolean) {
   return setCatalogActive("categories", id, activa);
+}
+export async function renameCategory(id: string, name: string) {
+  return renameCatalogItem("categories", id, name);
 }
 
 export async function createTag(_prev: CatalogActionState, formData: FormData) {
@@ -64,12 +93,18 @@ export async function createTag(_prev: CatalogActionState, formData: FormData) {
 export async function setTagActive(id: string, activa: boolean) {
   return setCatalogActive("tags", id, activa);
 }
+export async function renameTag(id: string, name: string) {
+  return renameCatalogItem("tags", id, name);
+}
 
 export async function createPaymentType(_prev: CatalogActionState, formData: FormData) {
   return createCatalogItem("payment_types", String(formData.get("name") ?? ""));
 }
 export async function setPaymentTypeActive(id: string, activa: boolean) {
   return setCatalogActive("payment_types", id, activa);
+}
+export async function renamePaymentType(id: string, name: string) {
+  return renameCatalogItem("payment_types", id, name);
 }
 
 export async function createPaymentAccount(
@@ -108,6 +143,9 @@ export async function createPaymentAccount(
 }
 export async function setPaymentAccountActive(id: string, activa: boolean) {
   return setCatalogActive("payment_accounts", id, activa);
+}
+export async function renamePaymentAccount(id: string, name: string) {
+  return renameCatalogItem("payment_accounts", id, name);
 }
 
 /** Crea una etiqueta desde el selector inline del formulario de gasto y la
