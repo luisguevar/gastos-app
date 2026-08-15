@@ -6,6 +6,7 @@ import { addExpense, updateExpense, type ExpenseFormState } from "@/app/actions/
 import { TagMultiSelect } from "@/components/tag-multiselect";
 import { PaymentMethodPicker } from "@/components/payment-method-picker";
 import { todayInLima } from "@/lib/date";
+import { Spinner } from "@/components/loader";
 import type { Category, PaymentAccount, PaymentType, Tag } from "@/lib/types";
 
 const initialState: ExpenseFormState = {};
@@ -34,7 +35,13 @@ function SubmitButton({
       disabled={pending || disabled}
       className="w-full rounded-[10px] bg-gold py-2.5 text-sm font-semibold uppercase tracking-[0.15em] text-gold-ink transition-colors hover:bg-gold-hover disabled:opacity-50"
     >
-      {pending ? pendingLabel : label}
+      {pending ? (
+        <span className="inline-flex items-center gap-2">
+          <Spinner className="h-4 w-4" /> {pendingLabel}
+        </span>
+      ) : (
+        label
+      )}
     </button>
   );
 }

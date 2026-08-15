@@ -2,26 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bóveda — fintech oscuro, sobrio. Tema único (no alterna con el SO). */
+/* Bóveda — paleta "Bosque profundo" (propuesta B) con modo claro y oscuro.
+   El modo claro es el valor por defecto; el oscuro se activa por preferencia
+   del sistema (prefers-color-scheme) y puede forzarse con [data-theme] desde
+   el botón de tema, que gana en ambos sentidos. El token histórico "gold"
+   ahora apunta al verde de acción, así todos los `bg-gold`/`text-gold`
+   existentes se vuelven verdes sin tocar cada componente. */
+
 :root {
+  color-scheme: light;
+
+  --bg: #f3f7f2;
+  --card: #ffffff;
+  --border: #dde6dd;
+  --text: #13211a;
+  --text-muted: #566b5d;
+
+  /* Verde de acción (token histórico "gold"). Claro: verde profundo con
+     contraste sobre blanco. */
+  --gold: #15803d;
+  --gold-hover: #1a9548;
+  --gold-ink: #ffffff;
+
+  --danger: #dc2626;
+  --danger-ink: #c81e1e;
+
+  /* Neutro para barras (efectivo / tipos de pago) y fondo de pista. */
+  --neutral: #7f958b;
+  --track: #e7efe6;
+
+  /* Degradados de los cards del dashboard (idénticos en ambos modos). */
+  --grad-verde: linear-gradient(135deg, #22c55e, #15803d);
+  --grad-rojo: linear-gradient(135deg, #fb7185, #be123c);
+  --grad-azul: linear-gradient(135deg, #38bdf8, #0369a1);
+  --grad-morado: linear-gradient(135deg, #a78bfa, #6d28d9);
+  --grad-teal: linear-gradient(135deg, #2dd4bf, #0d9488);
+  --grad-dark: linear-gradient(135deg, #3a4250, #1c2430);
+
+  /* Paleta categórica (pizarra) legible sobre fondo claro. */
+  --cat-1: #475569;
+  --cat-2: #526175;
+  --cat-3: #5e6d82;
+  --cat-4: #6b7a8f;
+  --cat-5: #79879b;
+  --cat-6: #8795a8;
+  --cat-7: #96a3b4;
+  --cat-8: #a6b2c1;
+}
+
+/* Tokens del modo oscuro. Se declaran bajo dos ámbitos: la media query cubre
+   la preferencia del sistema (salvo que el usuario haya forzado "light"); el
+   selector [data-theme="dark"] cubre el botón. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+
+    --bg: #101215;
+    --card: #191c20;
+    --border: #2c3138;
+    --text: #f2f3f4;
+    --text-muted: #9aa0a8;
+
+    --gold: #4ade80;
+    --gold-hover: #6ee7a0;
+    --gold-ink: #05140b;
+
+    --danger: #f87171;
+    --danger-ink: #fca5a5;
+
+    --neutral: #6b7178;
+    --track: #0c0e10;
+
+    --cat-1: #48525c;
+    --cat-2: #57626d;
+    --cat-3: #67737e;
+    --cat-4: #78838d;
+    --cat-5: #8a949d;
+    --cat-6: #9ca6ae;
+    --cat-7: #afb8bf;
+    --cat-8: #c2cad0;
+  }
+}
+
+:root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #14181c;
-  --card: #1d2126;
-  --border: #3a3f46;
-  --text: #f2efe6;
-  --text-muted: #a8acb2;
+  --bg: #101215;
+  --card: #191c20;
+  --border: #2c3138;
+  --text: #f2f3f4;
+  --text-muted: #9aa0a8;
 
-  --gold: #c9a227;
-  --gold-hover: #dbb43a;
-  --gold-ink: #14181c;
+  --gold: #4ade80;
+  --gold-hover: #6ee7a0;
+  --gold-ink: #05140b;
 
-  --danger: #e5484d;
-  --danger-ink: #ff8589;
+  --danger: #f87171;
+  --danger-ink: #fca5a5;
 
-  /* Paleta categórica: grises azulados fríos y discretos, orden fijo por
-     categoría (nunca se reordena). El dorado se reserva aparte para
-     resaltar la categoría de mayor gasto del mes (ver CategoryPieChart). */
+  --neutral: #6b7178;
+  --track: #0c0e10;
+
   --cat-1: #48525c;
   --cat-2: #57626d;
   --cat-3: #67737e;
@@ -47,14 +128,12 @@ body {
     font-family: var(--font-display), var(--font-sans), ui-sans-serif, sans-serif;
   }
 
-  /* Tarjeta plana: sin sombra, borde sutil, esquinas moderadas. */
   .vault-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
   }
 
-  /* Línea de ítem con separador punteado y monto alineado a la derecha. */
   .vault-line {
     display: flex;
     align-items: baseline;

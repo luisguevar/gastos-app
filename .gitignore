@@ -48,3 +48,9 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# FUSE mount artifacts (archivos temporales del montaje; no son del proyecto)
+.fuse_hidden*
+
+# carpeta de limpieza pendiente (archivos retirados a la espera de borrado)
+_to_delete/

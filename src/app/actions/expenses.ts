@@ -85,6 +85,7 @@ export async function addExpense(
 
   revalidatePath("/gastos");
   revalidatePath("/dashboard");
+  revalidatePath("/consumos");
   return {};
 }
 
@@ -127,6 +128,7 @@ export async function updateExpense(
 
   revalidatePath("/gastos");
   revalidatePath("/dashboard");
+  revalidatePath("/consumos");
   return {};
 }
 
@@ -135,4 +137,5 @@ export async function deleteExpense(id: string) {
   await supabase.from("expenses").delete().eq("id", id);
   revalidatePath("/gastos");
   revalidatePath("/dashboard");
+  revalidatePath("/consumos");
 }

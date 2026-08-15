@@ -7,7 +7,7 @@ import type { Preset } from "./shared";
 
 const chipClass = (active: boolean) =>
   `rounded-full border px-3 py-[6px] text-xs transition-colors ${
-    active ? "border-transparent bg-[#FAC775] text-[#412402]" : "border-line text-ink-muted"
+    active ? "border-transparent bg-gold text-gold-ink" : "border-line text-ink-muted"
   }`;
 
 function LightSelect({

@@ -54,7 +54,7 @@ export default async function TagDetailPage({
       getPaymentTypes(supabase, { activeOnly: true }),
       getPaymentAccounts(supabase, { activeOnly: true }),
       getTags(supabase, { activeOnly: true }),
-      getExpenses(supabase, { tagId: id }),
+      getExpenses(supabase, { tagId: id, isLoan: false }),
     ]);
 
   const categoryColorMap = buildColorMap(allCategories);

@@ -1,7 +1,9 @@
 import { formatCurrency } from "@/lib/format";
 
-const CASH_COLOR = "#8A8FA0";
-const DIGITAL_COLOR = "#C9A227";
+// Colores por rol (adaptan a claro/oscuro vía tokens): digital = verde de
+// acción, efectivo = neutro.
+const CASH_COLOR = "var(--neutral)";
+const DIGITAL_COLOR = "var(--gold)";
 
 function LegendRow({
   color,
@@ -29,25 +31,19 @@ function LegendRow({
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: 13, color: "#F2EFE6" }}>{label}</span>
+        <span style={{ fontSize: 13, color: "var(--text)" }}>{label}</span>
       </span>
       <span style={{ whiteSpace: "nowrap" }}>
         <span
           style={{
             fontSize: 13,
             fontWeight: emphasize ? 500 : 400,
-            color: emphasize ? "#F2EFE6" : "#A8ACB2",
+            color: emphasize ? "var(--text)" : "var(--text-muted)",
           }}
         >
           {formatCurrency(amount)}
         </span>
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 400,
-            color: emphasize ? "#A8ACB2" : "#6B6F76",
-          }}
-        >
+        <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text-muted)" }}>
           {" "}
           · {pct.toFixed(0)}%
         </span>
@@ -67,19 +63,12 @@ export function CashDigitalMeter({ cash, digital }: { cash: number; digital: num
   const digitalEmphasis = roundedDigitalPct >= roundedCashPct;
 
   return (
-    <div
-      style={{
-        backgroundColor: "#1D2126",
-        border: "1px solid #3A3F46",
-        borderRadius: 12,
-        padding: 16,
-      }}
-    >
+    <div className="vault-card" style={{ padding: 16 }}>
       <p
         style={{
           fontSize: 11,
           letterSpacing: "0.05em",
-          color: "#A8ACB2",
+          color: "var(--text-muted)",
           fontWeight: 500,
           marginBottom: 16,
           textTransform: "uppercase",
@@ -101,7 +90,7 @@ export function CashDigitalMeter({ cash, digital }: { cash: number; digital: num
               overflow: "hidden",
               display: "flex",
               marginBottom: 14,
-              backgroundColor: "#14181C",
+              backgroundColor: "var(--track)",
             }}
           >
             <div
@@ -121,20 +110,8 @@ export function CashDigitalMeter({ cash, digital }: { cash: number; digital: num
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <LegendRow
-              color={CASH_COLOR}
-              label="Efectivo"
-              amount={cash}
-              pct={cashPct}
-              emphasize={cashEmphasis}
-            />
-            <LegendRow
-              color={DIGITAL_COLOR}
-              label="Digital"
-              amount={digital}
-              pct={digitalPct}
-              emphasize={digitalEmphasis}
-            />
+            <LegendRow color={CASH_COLOR} label="Efectivo" amount={cash} pct={cashPct} emphasize={cashEmphasis} />
+            <LegendRow color={DIGITAL_COLOR} label="Digital" amount={digital} pct={digitalPct} emphasize={digitalEmphasis} />
           </div>
         </>
       )}

@@ -8,7 +8,15 @@ export type CatalogActionState = {
   error?: string;
 };
 
-type CatalogTable = "categories" | "tags" | "payment_types" | "payment_accounts";
+type CatalogTable = "categories" | "tags" | "payment_types" | "payment_accounts" | "people";
+
+function revalidateCatalogs() {
+  revalidatePath("/configuracion");
+  revalidatePath("/gastos");
+  revalidatePath("/dashboard");
+  revalidatePath("/prestamos");
+  revalidatePath("/consumos");
+}
 
 async function createCatalogItem(
   table: CatalogTable,
@@ -37,18 +45,14 @@ async function createCatalogItem(
     return { error: "No se pudo crear. Intenta de nuevo." };
   }
 
-  revalidatePath("/configuracion");
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidateCatalogs();
   return {};
 }
 
 async function setCatalogActive(table: CatalogTable, id: string, activa: boolean) {
   const supabase = await createClient();
   await supabase.from(table).update({ activa }).eq("id", id);
-  revalidatePath("/configuracion");
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidateCatalogs();
 }
 
 async function renameCatalogItem(
@@ -71,14 +75,41 @@ async function renameCatalogItem(
     return { error: "No se pudo renombrar. Intenta de nuevo." };
   }
 
-  revalidatePath("/configuracion");
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidateCatalogs();
   return {};
 }
 
-export async function createCategory(_prev: CatalogActionState, formData: FormData) {
-  return createCatalogItem("categories", String(formData.get("name") ?? ""));
+export async function createCategory(
+  _prev: CatalogActionState,
+  formData: FormData
+): Promise<CatalogActionState> {
+  const trimmed = String(formData.get("name") ?? "").trim();
+  const icon = String(formData.get("icon") ?? "").trim() || null;
+  if (!trimmed) return { error: "El nombre no puede estar vacío." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.from("categories").insert({
+    user_id: user.id,
+    name: trimmed,
+    icon,
+  });
+  if (error) {
+    if (error.code === "23505") return { error: "Ya existe una categoría con ese nombre." };
+    return { error: "No se pudo crear. Intenta de nuevo." };
+  }
+  revalidateCatalogs();
+  return {};
+}
+
+export async function setCategoryIcon(id: string, icon: string) {
+  const supabase = await createClient();
+  await supabase.from("categories").update({ icon }).eq("id", id);
+  revalidateCatalogs();
 }
 export async function setCategoryActive(id: string, activa: boolean) {
   return setCatalogActive("categories", id, activa);
@@ -105,6 +136,16 @@ export async function setPaymentTypeActive(id: string, activa: boolean) {
 }
 export async function renamePaymentType(id: string, name: string) {
   return renameCatalogItem("payment_types", id, name);
+}
+
+export async function createPerson(_prev: CatalogActionState, formData: FormData) {
+  return createCatalogItem("people", String(formData.get("name") ?? ""));
+}
+export async function setPersonActive(id: string, activa: boolean) {
+  return setCatalogActive("people", id, activa);
+}
+export async function renamePerson(id: string, name: string) {
+  return renameCatalogItem("people", id, name);
 }
 
 export async function createPaymentAccount(
@@ -136,9 +177,7 @@ export async function createPaymentAccount(
     return { error: "No se pudo crear. Intenta de nuevo." };
   }
 
-  revalidatePath("/configuracion");
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidateCatalogs();
   return {};
 }
 export async function setPaymentAccountActive(id: string, activa: boolean) {
@@ -148,9 +187,8 @@ export async function renamePaymentAccount(id: string, name: string) {
   return renameCatalogItem("payment_accounts", id, name);
 }
 
-/** Crea una etiqueta desde el selector inline del formulario de gasto y la
- * devuelve ya creada, para que el cliente la agregue a la selección sin
- * recargar la página. */
+/** Crea una etiqueta desde el selector inline del formulario y la devuelve ya
+ * creada, para agregarla a la selección sin recargar. */
 export async function createTagInline(
   name: string
 ): Promise<{ id: string; name: string } | { error: string }> {
@@ -177,5 +215,37 @@ export async function createTagInline(
   }
 
   revalidatePath("/configuracion");
+  return data;
+}
+
+/** Crea una persona (deudor) desde el selector inline del formulario de
+ * préstamo y la devuelve creada. */
+export async function createPersonInline(
+  name: string
+): Promise<{ id: string; name: string } | { error: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "El nombre no puede estar vacío." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data, error } = await supabase
+    .from("people")
+    .insert({ user_id: user.id, name: trimmed })
+    .select("id,name")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Ya existe una persona con ese nombre." };
+    }
+    return { error: "No se pudo crear la persona." };
+  }
+
+  revalidatePath("/configuracion");
+  revalidatePath("/prestamos");
   return data;
 }

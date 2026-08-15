@@ -19,16 +19,21 @@ export const metadata: Metadata = {
   description: "Control de gastos personales",
 };
 
+// Aplica el tema guardado antes del primer render para evitar parpadeo. Si no
+// hay preferencia forzada, no toca nada y manda prefers-color-scheme.
+const themeInit = `(function(){try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}
-      >
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}>
         {children}
       </body>
     </html>

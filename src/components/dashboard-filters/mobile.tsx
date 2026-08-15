@@ -8,7 +8,7 @@ import { presetRange, type Preset } from "./shared";
 
 const chipClass = (active: boolean) =>
   `rounded-full border px-3 py-[6px] text-xs transition-colors ${
-    active ? "border-transparent bg-[#FAC775] text-[#412402]" : "border-line text-ink-muted"
+    active ? "border-transparent bg-gold text-gold-ink" : "border-line text-ink-muted"
   }`;
 
 const fieldClass =
@@ -214,7 +214,7 @@ export function MobileFilters({
           <button
             type="button"
             onClick={handleApply}
-            className="w-full rounded-[8px] bg-gold p-[10px] text-[13px] font-medium text-[#412402]"
+            className="w-full rounded-[8px] bg-gold p-[10px] text-[13px] font-medium text-gold-ink"
           >
             Aplicar
           </button>

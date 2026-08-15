@@ -107,7 +107,7 @@ export function PaymentMethodPicker({
                     onClick={() => handleSelectType(pt.id)}
                     className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                       active
-                        ? "border-gold bg-[#FAC775] text-[#412402]"
+                        ? "border-gold bg-gold text-gold-ink"
                         : "border-line bg-transparent text-ink-muted"
                     }`}
                   >
@@ -168,7 +168,7 @@ export function PaymentMethodPicker({
             type="button"
             onClick={handleDone}
             disabled={!draftTypeId}
-            className="w-full rounded-[8px] bg-gold p-[11px] text-sm font-medium text-[#412402] disabled:opacity-40"
+            className="w-full rounded-[8px] bg-gold p-[11px] text-sm font-medium text-gold-ink disabled:opacity-40"
           >
             Listo
           </button>

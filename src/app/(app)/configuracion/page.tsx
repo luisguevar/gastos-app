@@ -1,18 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCategories, getPaymentAccounts, getPaymentTypes, getTags } from "@/lib/queries";
+import { getCategories, getPaymentAccounts, getPaymentTypes, getPeople, getTags } from "@/lib/queries";
 import {
   createCategory,
   createPaymentType,
+  createPerson,
   createTag,
   renameCategory,
   renamePaymentType,
+  renamePerson,
   renameTag,
   setCategoryActive,
+  setCategoryIcon,
   setPaymentTypeActive,
+  setPersonActive,
   setTagActive,
 } from "@/app/actions/catalogs";
 import { Tabs } from "@/components/config/tabs";
 import { CatalogManager } from "@/components/config/catalog-manager";
+import { CategoryManager } from "@/components/config/category-manager";
 import { PaymentAccountManager } from "@/components/config/payment-account-manager";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +25,12 @@ export const dynamic = "force-dynamic";
 export default async function ConfiguracionPage() {
   const supabase = await createClient();
 
-  const [categories, tags, paymentTypes, paymentAccounts] = await Promise.all([
+  const [categories, tags, paymentTypes, paymentAccounts, people] = await Promise.all([
     getCategories(supabase),
     getTags(supabase),
     getPaymentTypes(supabase),
     getPaymentAccounts(supabase),
+    getPeople(supabase),
   ]);
 
   return (
@@ -41,12 +47,12 @@ export default async function ConfiguracionPage() {
               key: "categorias",
               label: "Categorías",
               content: (
-                <CatalogManager
+                <CategoryManager
                   items={categories}
                   createAction={createCategory}
                   toggleAction={setCategoryActive}
                   renameAction={renameCategory}
-                  placeholder="Nueva categoría…"
+                  setIconAction={setCategoryIcon}
                 />
               ),
             },
@@ -60,6 +66,19 @@ export default async function ConfiguracionPage() {
                   toggleAction={setTagActive}
                   renameAction={renameTag}
                   placeholder="Nueva etiqueta…"
+                />
+              ),
+            },
+            {
+              key: "personas",
+              label: "Personas",
+              content: (
+                <CatalogManager
+                  items={people}
+                  createAction={createPerson}
+                  toggleAction={setPersonActive}
+                  renameAction={renamePerson}
+                  placeholder="Nueva persona…"
                 />
               ),
             },

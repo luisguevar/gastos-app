@@ -39,7 +39,7 @@ export function PaymentTypeChart({ data }: { data: PaymentTypeTotal[] }) {
             >
               <div
                 className="h-full rounded-full"
-                style={{ width: `${pct}%`, backgroundColor: "#8A8FA0" }}
+                style={{ width: `${pct}%`, backgroundColor: "var(--neutral)" }}
               />
             </div>
           </div>
