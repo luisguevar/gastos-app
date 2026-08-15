@@ -5,53 +5,58 @@ export type CatRow = {
   id: string;
   name: string;
   icon: string | null;
-  total: number;
-  pct: number;
-  widthPct: number;
+  spent: number;
+  budget: number;
 };
+
+// Semáforo por avance del presupuesto.
+function light(usedPct: number) {
+  if (usedPct > 100) {
+    return { grad: "linear-gradient(90deg,#f87171,#c81e1e)", text: "text-danger-ink" };
+  }
+  if (usedPct >= 80) {
+    return { grad: "linear-gradient(90deg,#f59e0b,#b45309)", text: "text-[#b45309]" };
+  }
+  return { grad: "var(--grad-verde)", text: "text-gold" };
+}
 
 export function CategoryRanking({ rows }: { rows: CatRow[] }) {
   if (rows.length === 0) {
-    return <p className="py-8 text-center text-sm text-ink-muted">No hay gastos este mes.</p>;
+    return (
+      <p className="py-8 text-center text-sm text-ink-muted">
+        Define tu presupuesto en Configuración para ver el avance por categoría.
+      </p>
+    );
   }
 
   return (
-    <table className="mt-4 w-full border-collapse">
-      <thead>
-        <tr className="border-b border-line text-left text-[10px] uppercase tracking-[0.06em] text-ink-muted">
-          <th className="py-2 font-semibold">Categoría</th>
-          <th className="py-2 font-semibold">Monto</th>
-          <th className="py-2 font-semibold">% del total</th>
-          <th className="w-[36%]" />
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => {
-          const Icon = iconByKey(r.icon);
-          return (
-            <tr key={r.id} className="border-b border-line text-sm last:border-b-0">
-              <td className="py-3">
-                <span className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gold/10 text-gold">
-                    <Icon size={17} />
-                  </span>
-                  <span className="text-ink">{r.name}</span>
+    <ul className="mt-4 flex flex-col">
+      {rows.map((r) => {
+        const Icon = iconByKey(r.icon);
+        const usedPct = r.budget > 0 ? (r.spent / r.budget) * 100 : 0;
+        const s = light(usedPct);
+        return (
+          <li key={r.id} className="flex items-center gap-3 border-b border-dashed border-line py-3 last:border-b-0">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gold/10 text-gold">
+              <Icon size={17} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="truncate text-sm text-ink">{r.name}</span>
+                <span className="tabular shrink-0 text-xs text-ink-muted">
+                  <b className="text-ink">{formatCurrency(r.spent)}</b> / {formatCurrency(r.budget)}
                 </span>
-              </td>
-              <td className="tabular py-3 font-semibold text-ink">{formatCurrency(r.total)}</td>
-              <td className="tabular py-3 text-ink-muted">{r.pct.toFixed(0)}%</td>
-              <td className="py-3">
-                <div className="h-1.5 min-w-[80px] overflow-hidden rounded-full bg-bg">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${r.widthPct}%`, backgroundImage: "var(--grad-verde)" }}
-                  />
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+              </div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg">
+                <div className="h-full rounded-full" style={{ width: `${Math.min(100, usedPct)}%`, backgroundImage: s.grad }} />
+              </div>
+            </div>
+            <span className={`tabular w-11 shrink-0 text-right text-sm font-semibold ${s.text}`}>
+              {Math.round(usedPct)}%
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

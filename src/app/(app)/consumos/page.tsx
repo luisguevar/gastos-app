@@ -29,6 +29,8 @@ type SearchParams = {
   persona?: string;
   estado?: string;
   periodo?: string;
+  from?: string;
+  to?: string;
   page?: string;
 };
 
@@ -47,7 +49,7 @@ function mergeActiveWithUsed<T extends { id: string; name: string }>(
   return merged;
 }
 
-function periodRange(periodo: string): { from?: string; to?: string } {
+function periodRange(periodo: string, from: string, to: string): { from?: string; to?: string } {
   const today = todayInLima();
   switch (periodo) {
     case "hoy":
@@ -56,6 +58,8 @@ function periodRange(periodo: string): { from?: string; to?: string } {
       return { from: daysAgoInLima(6), to: today };
     case "todo":
       return {};
+    case "rango":
+      return { from: from || undefined, to: to || undefined };
     case "mes":
     default:
       return { from: startOfMonthInLima(), to: today };
@@ -76,9 +80,11 @@ export default async function ConsumosPage({
   const persona = searchParams.persona ?? "";
   const estado = searchParams.estado === "pagados" || searchParams.estado === "pendientes" ? searchParams.estado : "";
   const periodo = searchParams.periodo ?? "mes";
+  const from = searchParams.from ?? "";
+  const to = searchParams.to ?? "";
   const page = Math.max(1, Number(searchParams.page) || 1);
 
-  const range = periodRange(periodo);
+  const range = periodRange(periodo, from, to);
   const isLoan = tipo === "gastos" ? false : tipo === "prestamos" ? true : undefined;
   const paid = estado === "pagados" ? true : estado === "pendientes" ? false : undefined;
 
@@ -190,6 +196,10 @@ export default async function ConsumosPage({
     if (persona) params.set("persona", persona);
     if (estado) params.set("estado", estado);
     if (periodo !== "mes") params.set("periodo", periodo);
+    if (periodo === "rango") {
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+    }
     if (p > 1) params.set("page", String(p));
     const s = params.toString();
     return s ? `/consumos?${s}` : "/consumos";
@@ -197,7 +207,7 @@ export default async function ConsumosPage({
   const prevHref = safePage > 1 ? hrefForPage(safePage - 1) : null;
   const nextHref = safePage < totalPages ? hrefForPage(safePage + 1) : null;
 
-  const filterValues: ConsumosFilterValues = { tipo, q, cat, pago, persona, estado, periodo };
+  const filterValues: ConsumosFilterValues = { tipo, q, cat, pago, persona, estado, periodo, from, to };
 
   return (
     <ConsumosNav>

@@ -5,7 +5,7 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
-import { getExpenses } from "@/lib/queries";
+import { getCategories, getExpenses, getMonthBudget } from "@/lib/queries";
 import {
   currentYearInLima,
   dayOfMonth,
@@ -48,10 +48,12 @@ export default async function DashboardPage() {
   const prevTo = monthEnd(-1);
   const year = currentYearInLima();
 
-  const [yearPersonal, monthAll, prevMonthAll] = await Promise.all([
+  const [yearPersonal, monthAll, prevMonthAll, activeCategories, monthBudget] = await Promise.all([
     getExpenses(supabase, { dateFrom: `${year}-01-01`, dateTo: today, isLoan: false }),
     getExpenses(supabase, { dateFrom: monthFrom, dateTo: today }),
     getExpenses(supabase, { dateFrom: prevFrom, dateTo: prevTo }),
+    getCategories(supabase, { activeOnly: true }),
+    getMonthBudget(supabase, monthFrom),
   ]);
 
   // KPIs
@@ -115,25 +117,23 @@ export default async function DashboardPage() {
           ? `vas ${Math.abs(Math.round(paceDelta))}% por debajo del mes pasado`
           : "igual que el mes pasado";
 
-  // Categorías del mes (personal)
-  const catMap = new Map<string, { id: string; name: string; icon: string | null; total: number }>();
+  // Gasto vs presupuesto por categoría (mes actual), ordenado de mayor a menor.
+  const spentByCat = new Map<string, number>();
   for (const e of monthAll) {
     if (e.is_loan) continue;
-    const c = catMap.get(e.category_id);
-    if (c) c.total += e.amount;
-    else catMap.set(e.category_id, { id: e.category_id, name: e.category_name, icon: e.category_icon, total: e.amount });
+    spentByCat.set(e.category_id, (spentByCat.get(e.category_id) ?? 0) + e.amount);
   }
-  const cats = Array.from(catMap.values()).sort((a, b) => b.total - a.total);
-  const catTotal = cats.reduce((s, c) => s + c.total, 0);
-  const maxCat = cats[0]?.total ?? 0;
-  const catRows: CatRow[] = cats.slice(0, 6).map((c) => ({
-    id: c.id,
-    name: c.name,
-    icon: c.icon,
-    total: c.total,
-    pct: catTotal > 0 ? (c.total / catTotal) * 100 : 0,
-    widthPct: maxCat > 0 ? (c.total / maxCat) * 100 : 0,
-  }));
+  const catRows: CatRow[] = activeCategories
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      spent: spentByCat.get(c.id) ?? 0,
+      budget: ((monthBudget.percents.get(c.id) ?? 0) / 100) * monthBudget.total,
+    }))
+    .filter((r) => r.budget > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 6);
 
   // Últimos gastos (personal, más recientes)
   const recientes = yearPersonal.slice(0, 6);
@@ -215,7 +215,7 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="vault-card px-6 py-5 lg:col-span-2">
           <h2 className="font-display text-base font-semibold text-ink">Gasto por categoría</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">Este mes · ordenado por monto</p>
+          <p className="mt-0.5 text-xs text-ink-muted">Este mes · gastado vs presupuesto</p>
           <CategoryRanking rows={catRows} />
         </div>
 

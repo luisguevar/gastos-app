@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCategories, getPaymentAccounts, getPaymentTypes, getPeople, getTags } from "@/lib/queries";
+import { getCategories, getDefaultBudget, getPaymentAccounts, getPaymentTypes, getPeople, getTags } from "@/lib/queries";
 import {
   createCategory,
   createPaymentType,
@@ -19,18 +19,20 @@ import { Tabs } from "@/components/config/tabs";
 import { CatalogManager } from "@/components/config/catalog-manager";
 import { CategoryManager } from "@/components/config/category-manager";
 import { PaymentAccountManager } from "@/components/config/payment-account-manager";
+import { BudgetConfig } from "@/components/config/budget-config";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
   const supabase = await createClient();
 
-  const [categories, tags, paymentTypes, paymentAccounts, people] = await Promise.all([
+  const [categories, tags, paymentTypes, paymentAccounts, people, defaultBudget] = await Promise.all([
     getCategories(supabase),
     getTags(supabase),
     getPaymentTypes(supabase),
     getPaymentAccounts(supabase),
     getPeople(supabase),
+    getDefaultBudget(supabase),
   ]);
 
   return (
@@ -106,6 +108,17 @@ export default async function ConfiguracionPage() {
                     <PaymentAccountManager items={paymentAccounts} paymentTypes={paymentTypes} />
                   </div>
                 </div>
+              ),
+            },
+            {
+              key: "presupuesto",
+              label: "Presupuesto",
+              content: (
+                <BudgetConfig
+                  categories={categories.filter((c) => c.activa)}
+                  defaultTotal={defaultBudget.total}
+                  defaultPercents={Object.fromEntries(defaultBudget.percents)}
+                />
               ),
             },
           ]}

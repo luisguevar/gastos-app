@@ -11,7 +11,9 @@ export type ConsumosFilterValues = {
   pago: string;
   persona: string;
   estado: string; // "" | "pendientes" | "pagados"
-  periodo: string; // "hoy" | "semana" | "mes" | "todo"
+  periodo: string; // "hoy" | "semana" | "mes" | "todo" | "rango"
+  from: string;
+  to: string;
 };
 
 function toQuery(v: ConsumosFilterValues): string {
@@ -23,6 +25,10 @@ function toQuery(v: ConsumosFilterValues): string {
   if (v.persona) p.set("persona", v.persona);
   if (v.estado) p.set("estado", v.estado);
   if (v.periodo && v.periodo !== "mes") p.set("periodo", v.periodo);
+  if (v.periodo === "rango") {
+    if (v.from) p.set("from", v.from);
+    if (v.to) p.set("to", v.to);
+  }
   return p.toString();
 }
 
@@ -72,6 +78,7 @@ export function ConsumosFilters({
     { k: "semana", l: "Semana" },
     { k: "mes", l: "Mes" },
     { k: "todo", l: "Todo" },
+    { k: "rango", l: "Rango" },
   ];
 
   return (
@@ -155,6 +162,28 @@ export function ConsumosFilters({
           );
         })}
       </div>
+
+      {values.periodo === "rango" ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={values.from}
+            max={values.to || undefined}
+            onChange={(e) => nav({ from: e.target.value })}
+            aria-label="Desde"
+            className={`${selClass} tabular`}
+          />
+          <span className="text-xs text-ink-muted">→</span>
+          <input
+            type="date"
+            value={values.to}
+            min={values.from || undefined}
+            onChange={(e) => nav({ to: e.target.value })}
+            aria-label="Hasta"
+            className={`${selClass} tabular`}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

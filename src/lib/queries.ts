@@ -228,3 +228,74 @@ export async function getConsumosSummary(
     loan_person_id: r.loan_person_id,
   }));
 }
+
+// ===== Presupuestos =====
+
+export type BudgetResolved = {
+  total: number;
+  percents: Map<string, number>; // category_id -> percent (default overlaid con override del mes)
+  usingMonthTotal: boolean;
+  overridden: boolean; // el mes tiene algún override (total o %)
+};
+
+export async function getDefaultBudget(
+  supabase: SupabaseClient
+): Promise<{ total: number; percents: Map<string, number> }> {
+  const [totalRes, pctRes] = await Promise.all([
+    supabase.from("budget_totals").select("amount").is("month", null).maybeSingle(),
+    supabase.from("budget_percents").select("category_id,percent").is("month", null),
+  ]);
+  const total = totalRes.data ? Number(totalRes.data.amount) : 0;
+  const percents = new Map<string, number>(
+    ((pctRes.data ?? []) as { category_id: string; percent: number }[]).map((r) => [
+      r.category_id,
+      Number(r.percent),
+    ])
+  );
+  return { total, percents };
+}
+
+export async function getMonthBudget(
+  supabase: SupabaseClient,
+  month: string
+): Promise<BudgetResolved> {
+  const [def, monthTotalRes, monthPctRes] = await Promise.all([
+    getDefaultBudget(supabase),
+    supabase.from("budget_totals").select("amount").eq("month", month).maybeSingle(),
+    supabase.from("budget_percents").select("category_id,percent").eq("month", month),
+  ]);
+  const monthTotal = monthTotalRes.data ? Number(monthTotalRes.data.amount) : null;
+  const monthPct = new Map<string, number>(
+    ((monthPctRes.data ?? []) as { category_id: string; percent: number }[]).map((r) => [
+      r.category_id,
+      Number(r.percent),
+    ])
+  );
+  const percents = new Map(Array.from(def.percents));
+  monthPct.forEach((v, k) => percents.set(k, v));
+  return {
+    total: monthTotal ?? def.total,
+    percents,
+    usingMonthTotal: monthTotal !== null,
+    overridden: monthTotal !== null || monthPct.size > 0,
+  };
+}
+
+/** Gasto personal por categoría en un rango (map category_id -> monto). */
+export async function getCategorySpend(
+  supabase: SupabaseClient,
+  dateFrom: string,
+  dateTo: string
+): Promise<Map<string, number>> {
+  const { data } = await supabase
+    .from("expenses")
+    .select("category_id,amount")
+    .eq("is_loan", false)
+    .gte("expense_date", dateFrom)
+    .lte("expense_date", dateTo);
+  const m = new Map<string, number>();
+  for (const r of (data ?? []) as { category_id: string; amount: number }[]) {
+    m.set(r.category_id, (m.get(r.category_id) ?? 0) + Number(r.amount));
+  }
+  return m;
+}
