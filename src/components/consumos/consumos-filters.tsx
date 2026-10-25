@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useConsumosNav } from "@/components/consumos/consumos-nav";
+import { TagMultiFilter } from "@/components/consumos/tag-multi-filter";
 import type { Catalog } from "@/lib/types";
 
 export type ConsumosFilterValues = {
   tipo: string; // "todos" | "gastos" | "prestamos"
   q: string;
   cat: string;
-  etiqueta: string;
+  etiquetas: string[];
+  tagMode: string;
   pago: string;
   persona: string;
   estado: string; // "" | "pendientes" | "pagados"
@@ -22,7 +24,8 @@ function toQuery(v: ConsumosFilterValues): string {
   if (v.tipo && v.tipo !== "todos") p.set("tipo", v.tipo);
   if (v.q) p.set("q", v.q);
   if (v.cat) p.set("cat", v.cat);
-  if (v.etiqueta) p.set("etiqueta", v.etiqueta);
+  if (v.etiquetas.length) p.set("etiqueta", v.etiquetas.join(","));
+  if (v.tagMode === "all") p.set("tagmode", "all");
   if (v.pago) p.set("pago", v.pago);
   if (v.persona) p.set("persona", v.persona);
   if (v.estado) p.set("estado", v.estado);
@@ -122,14 +125,12 @@ export function ConsumosFilters({
         ))}
       </select>
 
-      <select value={values.etiqueta} onChange={(e) => nav({ etiqueta: e.target.value })} className={selClass}>
-        <option value="">Etiqueta</option>
-        {tags.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
-      </select>
+      <TagMultiFilter
+        tags={tags}
+        selected={values.etiquetas}
+        mode={values.tagMode}
+        onChange={(sel, m) => nav({ etiquetas: sel, tagMode: m })}
+      />
 
       <select value={values.pago} onChange={(e) => nav({ pago: e.target.value })} className={selClass}>
         <option value="">Método de pago</option>

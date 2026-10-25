@@ -26,6 +26,7 @@ type SearchParams = {
   q?: string;
   cat?: string;
   etiqueta?: string;
+  tagmode?: string;
   pago?: string;
   persona?: string;
   estado?: string;
@@ -77,7 +78,8 @@ export default async function ConsumosPage({
   const tipo = searchParams.tipo === "gastos" || searchParams.tipo === "prestamos" ? searchParams.tipo : "todos";
   const q = searchParams.q?.trim() ?? "";
   const cat = searchParams.cat ?? "";
-  const etiqueta = searchParams.etiqueta ?? "";
+  const etiquetas = (searchParams.etiqueta ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const tagMode = searchParams.tagmode === "all" ? "all" : "any";
   const pago = searchParams.pago ?? "";
   const persona = searchParams.persona ?? "";
   const estado = searchParams.estado === "pagados" || searchParams.estado === "pendientes" ? searchParams.estado : "";
@@ -95,7 +97,8 @@ export default async function ConsumosPage({
     dateTo: range.to,
     search: q || undefined,
     categoryId: cat || undefined,
-    tagId: etiqueta || undefined,
+    tagIds: etiquetas.length ? etiquetas : undefined,
+    tagMode,
     paymentTypeId: pago || undefined,
     personId: persona || undefined,
     isLoan,
@@ -197,7 +200,8 @@ export default async function ConsumosPage({
     if (tipo !== "todos") params.set("tipo", tipo);
     if (q) params.set("q", q);
     if (cat) params.set("cat", cat);
-    if (etiqueta) params.set("etiqueta", etiqueta);
+    if (etiquetas.length) params.set("etiqueta", etiquetas.join(","));
+    if (tagMode === "all") params.set("tagmode", "all");
     if (pago) params.set("pago", pago);
     if (persona) params.set("persona", persona);
     if (estado) params.set("estado", estado);
@@ -213,7 +217,14 @@ export default async function ConsumosPage({
   const prevHref = safePage > 1 ? hrefForPage(safePage - 1) : null;
   const nextHref = safePage < totalPages ? hrefForPage(safePage + 1) : null;
 
-  const filterValues: ConsumosFilterValues = { tipo, q, cat, etiqueta, pago, persona, estado, periodo, from, to };
+  const selectedTagIds = new Set(etiquetas);
+  const filterTags = allTags.filter((t) => t.activa || selectedTagIds.has(t.id));
+  // Los demás filtros también muestran solo activos (más el seleccionado).
+  const filterCategories = allCategories.filter((c) => c.activa || c.id === cat);
+  const filterPaymentTypes = allPaymentTypes.filter((p) => p.activa || p.id === pago);
+  const filterPeople = allPeople.filter((p) => p.activa || p.id === persona);
+
+  const filterValues: ConsumosFilterValues = { tipo, q, cat, etiquetas, tagMode, pago, persona, estado, periodo, from, to };
 
   return (
     <ConsumosNav>
@@ -249,10 +260,10 @@ export default async function ConsumosPage({
 
       <ConsumosFilters
         values={filterValues}
-        categories={allCategories}
-        tags={allTags}
-        paymentTypes={allPaymentTypes}
-        people={allPeople}
+        categories={filterCategories}
+        tags={filterTags}
+        paymentTypes={filterPaymentTypes}
+        people={filterPeople}
       />
 
       <PendingOverlay>

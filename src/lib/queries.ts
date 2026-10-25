@@ -115,6 +115,8 @@ export type ExpenseFilters = {
   categoryId?: string;
   paymentTypeId?: string;
   tagId?: string;
+  tagIds?: string[];
+  tagMode?: "any" | "all";
   search?: string;
   limit?: number;
   // Préstamos: isLoan=false -> solo gastos; true -> solo préstamos; undefined -> ambos.
@@ -132,6 +134,46 @@ async function resolveTagExpenseIds(
     .select("expense_id")
     .eq("tag_id", tagId);
   return (data ?? []).map((r) => r.expense_id as string);
+}
+
+/** Resuelve los expense_ids para un conjunto de etiquetas. mode "any" = con
+ * alguna (unión); "all" = con todas (intersección). Devuelve null si no hay
+ * filtro de etiquetas. */
+async function resolveExpenseIdsForTags(
+  supabase: SupabaseClient,
+  filters: ExpenseFilters
+): Promise<string[] | null> {
+  const ids =
+    filters.tagIds && filters.tagIds.length > 0
+      ? filters.tagIds
+      : filters.tagId
+        ? [filters.tagId]
+        : [];
+  if (ids.length === 0) return null;
+
+  const { data } = await supabase
+    .from("expense_tags")
+    .select("expense_id,tag_id")
+    .in("tag_id", ids);
+  const rows = (data ?? []) as { expense_id: string; tag_id: string }[];
+
+  if (filters.tagMode === "all" && ids.length > 1) {
+    const perExpense = new Map<string, Set<string>>();
+    for (const r of rows) {
+      let set = perExpense.get(r.expense_id);
+      if (!set) {
+        set = new Set();
+        perExpense.set(r.expense_id, set);
+      }
+      set.add(r.tag_id);
+    }
+    const out: string[] = [];
+    perExpense.forEach((set, eid) => {
+      if (set.size >= ids.length) out.push(eid);
+    });
+    return out;
+  }
+  return Array.from(new Set(rows.map((r) => r.expense_id)));
 }
 
 function applyCommonFilters<T>(query: T, filters: ExpenseFilters): T {
@@ -152,11 +194,8 @@ export async function getExpenses(
   supabase: SupabaseClient,
   filters: ExpenseFilters = {}
 ): Promise<ExpenseRow[]> {
-  let expenseIdFilter: string[] | null = null;
-  if (filters.tagId) {
-    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
-    if (expenseIdFilter.length === 0) return [];
-  }
+  const expenseIdFilter = await resolveExpenseIdsForTags(supabase, filters);
+  if (expenseIdFilter !== null && expenseIdFilter.length === 0) return [];
 
   let query = supabase
     .from("expenses")
@@ -176,11 +215,8 @@ export async function getExpensesPage(
   supabase: SupabaseClient,
   filters: ExpenseFilters & { limit: number; offset: number }
 ): Promise<{ expenses: ExpenseRow[]; total: number }> {
-  let expenseIdFilter: string[] | null = null;
-  if (filters.tagId) {
-    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
-    if (expenseIdFilter.length === 0) return { expenses: [], total: 0 };
-  }
+  const expenseIdFilter = await resolveExpenseIdsForTags(supabase, filters);
+  if (expenseIdFilter !== null && expenseIdFilter.length === 0) return { expenses: [], total: 0 };
 
   let query = supabase
     .from("expenses")
@@ -211,11 +247,8 @@ export async function getConsumosSummary(
   supabase: SupabaseClient,
   filters: ExpenseFilters = {}
 ): Promise<ConsumosSummaryRow[]> {
-  let expenseIdFilter: string[] | null = null;
-  if (filters.tagId) {
-    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
-    if (expenseIdFilter.length === 0) return [];
-  }
+  const expenseIdFilter = await resolveExpenseIdsForTags(supabase, filters);
+  if (expenseIdFilter !== null && expenseIdFilter.length === 0) return [];
   let query = supabase.from("expenses").select("amount,is_loan,loan_paid,loan_person_id");
   query = applyCommonFilters(query, filters);
   if (expenseIdFilter) query = query.in("id", expenseIdFilter);
