@@ -8,6 +8,7 @@ export type ConsumosFilterValues = {
   tipo: string; // "todos" | "gastos" | "prestamos"
   q: string;
   cat: string;
+  etiqueta: string;
   pago: string;
   persona: string;
   estado: string; // "" | "pendientes" | "pagados"
@@ -21,6 +22,7 @@ function toQuery(v: ConsumosFilterValues): string {
   if (v.tipo && v.tipo !== "todos") p.set("tipo", v.tipo);
   if (v.q) p.set("q", v.q);
   if (v.cat) p.set("cat", v.cat);
+  if (v.etiqueta) p.set("etiqueta", v.etiqueta);
   if (v.pago) p.set("pago", v.pago);
   if (v.persona) p.set("persona", v.persona);
   if (v.estado) p.set("estado", v.estado);
@@ -38,11 +40,13 @@ const selClass =
 export function ConsumosFilters({
   values,
   categories,
+  tags,
   paymentTypes,
   people,
 }: {
   values: ConsumosFilterValues;
   categories: Catalog[];
+  tags: Catalog[];
   paymentTypes: Catalog[];
   people: Catalog[];
 }) {
@@ -114,6 +118,15 @@ export function ConsumosFilters({
         {categories.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
+          </option>
+        ))}
+      </select>
+
+      <select value={values.etiqueta} onChange={(e) => nav({ etiqueta: e.target.value })} className={selClass}>
+        <option value="">Etiqueta</option>
+        {tags.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
           </option>
         ))}
       </select>

@@ -211,8 +211,14 @@ export async function getConsumosSummary(
   supabase: SupabaseClient,
   filters: ExpenseFilters = {}
 ): Promise<ConsumosSummaryRow[]> {
+  let expenseIdFilter: string[] | null = null;
+  if (filters.tagId) {
+    expenseIdFilter = await resolveTagExpenseIds(supabase, filters.tagId);
+    if (expenseIdFilter.length === 0) return [];
+  }
   let query = supabase.from("expenses").select("amount,is_loan,loan_paid,loan_person_id");
   query = applyCommonFilters(query, filters);
+  if (expenseIdFilter) query = query.in("id", expenseIdFilter);
   const { data } = await query;
   return (
     (data ?? []) as {

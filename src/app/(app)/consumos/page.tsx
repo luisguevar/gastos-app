@@ -25,6 +25,7 @@ type SearchParams = {
   tipo?: string;
   q?: string;
   cat?: string;
+  etiqueta?: string;
   pago?: string;
   persona?: string;
   estado?: string;
@@ -76,6 +77,7 @@ export default async function ConsumosPage({
   const tipo = searchParams.tipo === "gastos" || searchParams.tipo === "prestamos" ? searchParams.tipo : "todos";
   const q = searchParams.q?.trim() ?? "";
   const cat = searchParams.cat ?? "";
+  const etiqueta = searchParams.etiqueta ?? "";
   const pago = searchParams.pago ?? "";
   const persona = searchParams.persona ?? "";
   const estado = searchParams.estado === "pagados" || searchParams.estado === "pendientes" ? searchParams.estado : "";
@@ -93,6 +95,7 @@ export default async function ConsumosPage({
     dateTo: range.to,
     search: q || undefined,
     categoryId: cat || undefined,
+    tagId: etiqueta || undefined,
     paymentTypeId: pago || undefined,
     personId: persona || undefined,
     isLoan,
@@ -103,6 +106,7 @@ export default async function ConsumosPage({
     allCategories,
     allPaymentTypes,
     allPeople,
+    allTags,
     activeCategories,
     activePaymentTypes,
     activePaymentAccounts,
@@ -114,6 +118,7 @@ export default async function ConsumosPage({
     getCategories(supabase),
     getPaymentTypes(supabase),
     getPeople(supabase),
+    getTags(supabase),
     getCategories(supabase, { activeOnly: true }),
     getPaymentTypes(supabase, { activeOnly: true }),
     getPaymentAccounts(supabase, { activeOnly: true }),
@@ -192,6 +197,7 @@ export default async function ConsumosPage({
     if (tipo !== "todos") params.set("tipo", tipo);
     if (q) params.set("q", q);
     if (cat) params.set("cat", cat);
+    if (etiqueta) params.set("etiqueta", etiqueta);
     if (pago) params.set("pago", pago);
     if (persona) params.set("persona", persona);
     if (estado) params.set("estado", estado);
@@ -207,7 +213,7 @@ export default async function ConsumosPage({
   const prevHref = safePage > 1 ? hrefForPage(safePage - 1) : null;
   const nextHref = safePage < totalPages ? hrefForPage(safePage + 1) : null;
 
-  const filterValues: ConsumosFilterValues = { tipo, q, cat, pago, persona, estado, periodo, from, to };
+  const filterValues: ConsumosFilterValues = { tipo, q, cat, etiqueta, pago, persona, estado, periodo, from, to };
 
   return (
     <ConsumosNav>
@@ -244,6 +250,7 @@ export default async function ConsumosPage({
       <ConsumosFilters
         values={filterValues}
         categories={allCategories}
+        tags={allTags}
         paymentTypes={allPaymentTypes}
         people={allPeople}
       />
